@@ -1,0 +1,24 @@
+# 📁 cnc_dash/
+# ├─ app.py
+# ├─ requirements.txt
+# ├─ README.md
+# ├─ assets/
+# │  └─ theme.css
+# ├─ src/
+# │  ├─ __init__.py
+# │  ├─ layout.py
+# │  ├─ callbacks.py
+# │  ├─ data/
+# │  │  ├─ __init__.py
+# │  │  └─ sample_data.py
+# │  └─ components/
+# │     ├─ __init__.py
+# │     └─ kpi_card.py
+# └─ pages/
+#    ├─ __init__.py
+#    ├─ overview.py
+#    ├─ territorial.py
+#    ├─ segments.py
+#    ├─ scenarios.py
+#    ├─ data_explorer.py
+#    └─ about.py
