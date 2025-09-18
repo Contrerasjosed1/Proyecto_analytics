@@ -30,4 +30,4 @@ app.layout = make_shell(shared_stores)
 from src import callbacks as _register_callbacks  # noqa: F401
 
 if __name__ == "__main__":
-    app.run_server(debug=True)
+    app.run(debug=True)
