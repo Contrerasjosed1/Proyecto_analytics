@@ -6,6 +6,9 @@ dash.register_page(__name__, path="/about", name="About & notes")
 
 layout = dbc.Container([
     dbc.Row([
+        dbc.Col(dbc.Button("← Volver al inicio", href="/", color="secondary", outline=True), width="auto")
+    ], className="mt-3 mb-2"),
+    dbc.Row([
         dbc.Col(dbc.Card(dbc.CardBody([
             html.H5("About this prototype"),
             html.P("Scroll-first Dash layout aligned to the provided mockup: sticky header with filters and KPI chips; sections for choropleth + cluster summaries, socio-demographic clusters, behavioral patterns, and a needs ranking. Replace the sample data and map join with your ETL outputs."),
@@ -14,5 +17,5 @@ layout = dbc.Container([
                 html.Li("Charts: Plotly figures; plug real models in src/callbacks.py."),
             ])
         ])), md=12)
-    ], className="gy-3 mt-2")
+    ], className="gy-3 mt-1"),
 ], fluid=True)
