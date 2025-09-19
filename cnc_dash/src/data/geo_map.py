@@ -2,6 +2,8 @@ from io import BytesIO
 import base64
 from pathlib import Path
 import geopandas as gpd
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from .sample_data import make_fake_data

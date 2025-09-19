@@ -65,7 +65,7 @@ def _section2(data):
     f_sc = px.scatter(df.sample(min(600, len(df))), x="edad", y="idx_adopcion", color="cluster", opacity=.8,
                       title="Distribución de clusters", labels={"edad":"Edad","idx_adopcion":"Índice"})
 
-    g_gen = (df.groupby(["cluster","genero"], as_index=False).size())
+    g_gen = (df.groupby(["cluster","genero"], observed=False, as_index=False).size())
     f_gen = px.bar(g_gen, x="cluster", y="size", color="genero", barmode="stack", title="Proporción de género por cluster")
 
     g_est = (df.groupby("cluster")[["estrato"]].mean().reset_index())
