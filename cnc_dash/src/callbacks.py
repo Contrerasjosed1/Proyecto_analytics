@@ -1,180 +1,115 @@
-
-from dash import Input, Output, State, callback, dcc
+from dash import Input, Output, callback
 import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
 
 from src.data.sample_data import make_fake_data
+from src.data.geo_map import build_choropleth_png
 
-# ── Initialize stores when app loads ─────────────────────────────────────────
+# ---------------------- Data load ----------------------
 @callback(
     Output("store-data", "data"),
     Output("store-metadata", "data"),
-    Input("btn-refresh", "n_clicks"),
+    Input("store-data", "id"),
     prevent_initial_call=False,
 )
-def _load_data(n_clicks):
-    df = make_fake_data(n=2000)
-    meta = {"rows": len(df), "note": "Using synthetic sample data. Replace with real ETL output."}
+def _init_data(_):
+    df = make_fake_data(2000)
+    meta = {"rows": len(df)}
     return df.to_dict("records"), meta
 
 
-# ── Populate filter options from data ────────────────────────────────────────
+# ---------------------- Filters ------------------------
 @callback(
-    Output("f-year", "options"),
     Output("f-depto", "options"),
-    Output("f-muni", "options"),
-    Input("store-data", "data"),
-)
-def _populate_filters(data):
+    Input("store-data", "data"))
+def _opts_depto(data):
     df = pd.DataFrame(data)
-    return (
-        sorted(df["year"].unique()),
-        sorted(df["departamento"].unique()),
-        sorted(df["municipio"].unique()),
-    )
+    return sorted(df["departamento"].unique())
 
 
-# ── Update global filters store ──────────────────────────────────────────────
+# ---------------------- Map image ----------------------
+@callback(Output("img-map", "src"), Input("store-data", "data"))
+def _update_map(data):
+    df = pd.DataFrame(data)
+    return build_choropleth_png(df)
+
+
+# ---------------------- Section 1 charts ---------------
 @callback(
-    Output("store-filters", "data"),
-    Input("f-year", "value"),
-    Input("f-depto", "value"),
-    Input("f-muni", "value"),
-    Input("f-estrato", "value"),
-    Input("f-edad", "value"),
-    Input("f-internet", "value"),
-)
-def _update_filters(y, dpt, muni, est, edad, net):
-    return {
-        "year": y,
-        "depto": dpt or [],
-        "muni": muni or [],
-        "estrato": est or [1,2,3,4,5,6],
-        "edad": edad or [12,80],
-        "with_internet": (net is not None and "with" in net)
-    }
+    Output("fig-prom-pobl", "figure"),
+    Output("fig-cobertura-cluster", "figure"),
+    Output("fig-adop-por-cluster", "figure"),
+    Input("store-data", "data"))
+
+def _section1(data):
+    df = pd.DataFrame(data)
+    g = df.groupby("cluster").agg(pobl=("municipio","size"), cobertura=("acceso_internet","mean"), adop=("idx_adopcion","mean")).reset_index()
+    f1 = px.bar(g, x="cluster", y="pobl", title="Promedio de población por cluster")
+    f2 = px.bar(g, x="cluster", y="cobertura", title="Tasa de cobertura por cluster")
+    f2.update_yaxes(tickformat=",.0%")
+    f3 = px.line(g, x="cluster", y="adop", markers=True, title="Tasa de adopción digital por cluster")
+    return f1, f2, f3
 
 
-# ── Helper to apply filters ─────────────────────────────────────────────────
-def _apply_filters(df: pd.DataFrame, F: dict) -> pd.DataFrame:
-    out = df.copy()
-    if F.get("year") is not None:
-        out = out[out["year"] == F["year"]]
-    if F.get("depto"):
-        out = out[out["departamento"].isin(F["depto"])]
-    if F.get("muni"):
-        out = out[out["municipio"].isin(F["muni"])]
-    if F.get("estrato"):
-        out = out[out["estrato"].isin(F["estrato"])]
-    lo, hi = F.get("edad", [12,80])
-    out = out[(out["edad"] >= lo) & (out["edad"] <= hi)]
-    if F.get("with_internet"):
-        out = out[out["acceso_internet"] == 1]
-    return out
-
-
-# ── Overview KPIs and charts ────────────────────────────────────────────────
+# ---------------------- Section 2 charts ---------------
 @callback(
-    Output("kpi-pop", "children"),
-    Output("kpi-idx", "children"),
-    Output("kpi-coverage", "children"),
-    Output("kpi-inet", "children"),
-    Output("fig-idx-depto", "figure"),
-    Output("fig-estrato", "figure"),
-    Input("store-data", "data"),
-    Input("store-filters", "data"),
-)
+    Output("fig-scatter-clusters", "figure"),
+    Output("fig-genero", "figure"),
+    Output("fig-estrato-prom", "figure"),
+    Output("fig-escolaridad-prom", "figure"),
+    Input("store-data", "data"))
 
-def _overview(df_rec, F):
-    import plotly.express as px
-    import pandas as pd
-    df = _apply_filters(pd.DataFrame(df_rec), F or {})
-    if df.empty:
-        return ("0", "—", "—", "—", px.scatter(), px.histogram())
+def _section2(data):
+    df = pd.DataFrame(data)
+    f_sc = px.scatter(df.sample(min(600, len(df))), x="edad", y="idx_adopcion", color="cluster", opacity=.8,
+                      title="Distribución de clusters", labels={"edad":"Edad","idx_adopcion":"Índice"})
 
-    kpi_pop = f"{len(df):,}"
-    kpi_idx = f"{df['idx_adopcion'].mean():.2f}"
-    kpi_cov = f"{(df['idx_adopcion']>0.67).mean():.0%}"
-    kpi_inet = f"{(df['acceso_internet'].mean()):.0%}"
+    g_gen = (df.groupby(["cluster","genero"], as_index=False).size())
+    f_gen = px.bar(g_gen, x="cluster", y="size", color="genero", barmode="stack", title="Proporción de género por cluster")
 
-    g1 = df.groupby("departamento")["idx_adopcion"].mean().reset_index().sort_values("idx_adopcion")
-    fig1 = px.bar(g1.tail(15), x="idx_adopcion", y="departamento", orientation="h",
-                  title="Top departments by adoption index")
+    g_est = (df.groupby("cluster")[["estrato"]].mean().reset_index())
+    f_est = px.bar(g_est, x="cluster", y="estrato", title="Estrato promedio por cluster")
 
-    fig2 = px.box(df, x="estrato", y="idx_adopcion", points=False, title="Adoption by strata")
+    g_esc = (df.groupby("cluster")[["escolaridad_anios"]].mean().reset_index())
+    f_esc = px.bar(g_esc, x="cluster", y="escolaridad_anios", title="Años de escolaridad promedio")
 
-    return kpi_pop, kpi_idx, kpi_cov, kpi_inet, fig1, fig2
+    return f_sc, f_gen, f_est, f_esc
 
 
-# ── Territorial ranking (placeholder for choropleth) ─────────────────────────
-@callback(
-    Output("table-ranking", "data"),
-    Output("table-ranking", "columns"),
-    Input("store-data", "data"),
-    Input("store-filters", "data"),
-)
+# ---------------------- Section 3 chart ----------------
+@callback(Output("fig-patrones", "figure"), Input("store-data", "data"))
 
-def _territorial_table(df_rec, F):
-    import pandas as pd
-    df = _apply_filters(pd.DataFrame(df_rec), F or {})
-    if df.empty:
-        return [], [{"name": "municipio", "id": "municipio"}]
-
-    ranking = (
-        df.groupby(["departamento","municipio"], as_index=False)
-          .agg(idx=("idx_adopcion","mean"), pobl=("municipio","size"))
-          .sort_values(["idx","pobl"]).head(50)
-    )
-    columns=[{"name":"Depto","id":"departamento"},{"name":"Municipio","id":"municipio"},{"name":"Idx","id":"idx"},{"name":"Obs","id":"pobl"}]
-    ranking["idx"] = (ranking["idx"].round(3))
-    return ranking.to_dict("records"), columns
+def _section3(data):
+    df = pd.DataFrame(data)
+    # Fake composition of patterns
+    bins = pd.qcut(df["idx_adopcion"], 5, labels=["No usuarios","Comunicación y entretenimiento","Educación y participación","Uso avanzado","Uso experto"])
+    g = df.groupby(["cluster", bins], as_index=False).size()
+    f = px.bar(g, x="cluster", y="size", color="idx_adopcion", barmode="stack", title="Patrones de adopción digital")
+    f.update_layout(legend_title_text="Patrón")
+    return f
 
 
-# ── Segments page callbacks ─────────────────────────────────────────────────
-@callback(
-    Output("fig-seg-scatter", "figure"),
-    Output("fig-seg-bars", "figure"),
-    Input("store-data", "data"),
-    Input("store-filters", "data"),
-)
+# ---------------------- Section 4 table ----------------
+@callback(Output("tbl-top5", "figure"), Input("store-data", "data"))
 
-def _segments(df_rec, F):
-    import plotly.express as px
-    import pandas as pd
-    df = _apply_filters(pd.DataFrame(df_rec), F or {})
-    if df.empty:
-        return px.scatter(), px.bar()
+def _section4(data):
+    df = pd.DataFrame(data)
+    # "Necesidad" como (1 - idx_adopcion)
+    need = (df.groupby(["departamento","municipio"], as_index=False)
+            .agg(cobertura=("acceso_internet","mean"), adop=("idx_adopcion","mean"), estrato=("estrato","mean")))
+    need["score"] = 1 - need["adop"]
+    top5 = need.sort_values("score", ascending=False).head(5)
 
-    fig_sc = px.scatter(
-        df.sample(min(1000, len(df))), x="edad", y="idx_adopcion", color="cluster",
-        opacity=0.7, title="Population segments (synthetic clusters)",
-        labels={"edad":"Age","idx_adopcion":"Adoption index"}
-    )
-
-    g = df.groupby(["cluster","estrato"], as_index=False).size()
-    fig_bar = px.bar(g, x="estrato", y="size", color="cluster", barmode="group",
-                     title="Segment size by strata")
-
-    return fig_sc, fig_bar
-
-
-# ── Scenarios (dummy what-if logic – replace with your models) ───────────────
-@callback(
-    Output("kpi-scn-idx", "children"),
-    Output("kpi-scn-coverage", "children"),
-    Input("scn-subsidy", "value"),
-    Input("scn-training", "value"),
-    Input("store-data", "data"),
-    Input("store-filters", "data"),
-)
-
-def _scenarios(subsidy, training, df_rec, F):
-    import pandas as pd
-    df = _apply_filters(pd.DataFrame(df_rec), F or {})
-    if df.empty:
-        return "—", "—"
-
-    # Very simple proxy for uplift: +a% per subsidy point and +b% per training hour
-    uplift = (subsidy or 0) * 0.002 + (training or 0) * 0.001
-    new_idx = (df["idx_adopcion"].mean() * (1 + uplift))
-    cov = ((df["idx_adopcion"] * (1 + uplift)) > 0.67).mean()
-    return f"{new_idx:.2f}", f"{cov:.0%}"
+    # Render as table-like figure for quick drop-in (consistent with plot outputs)
+    header = dict(values=["Municipio","Cobertura","Departamento","Tasa adopción","Estrato prom."], align='left')
+    cells = dict(values=[
+        top5["municipio"],
+        (top5["cobertura"]*100).round(0).astype(int).astype(str) + '%',
+        top5["departamento"],
+        (top5["adop"]*100).round(0).astype(int).astype(str) + '%',
+        top5["estrato"].round(1)
+    ], align='left')
+    fig = go.Figure(data=[go.Table(header=header, cells=cells)])
+    fig.update_layout(title="Top 5 de municipios con mayores necesidades de adopción digital")
+    return fig

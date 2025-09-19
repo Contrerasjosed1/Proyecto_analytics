@@ -1,59 +1,78 @@
 from dash import html, dcc
 import dash
 import dash_bootstrap_components as dbc
+from src.components.kpi_chip import kpi_chip
+from src.components.section import section
 
 
-def _sidebar():
-    # Build navigation from registered pages
-    nav_items = []
-    for page in dash.page_registry.values():
-        nav_items.append(
-            dbc.NavLink(page["name"], href=page["path"], active="exact", className="mb-1")
-        )
-
+def _header():
+    # top title + compact filter row + KPI chips, sticks to top
     return html.Div([
-        html.Div([
-            html.Div("CNC – Digital Adoption", className="app-title"),
-            html.Div("Prototipo tablero analítico", className="subtitle")
-        ], className="mb-3"),
-        dbc.Nav(nav_items, vertical=True, pills=True),
-        html.Hr(),
-        html.Div([
-            html.Small("Filters apply across pages"),
-            html.Div(className="mt-2"),
-            dbc.Label("Year"),
-            dcc.Dropdown(id="f-year", multi=False, placeholder="All", clearable=True),
-            dbc.Label("Department", className="mt-2"),
-            dcc.Dropdown(id="f-depto", multi=True, placeholder="All"),
-            dbc.Label("Municipality", className="mt-2"),
-            dcc.Dropdown(id="f-muni", multi=True, placeholder="All"),
-            dbc.Label("Strata", className="mt-2"),
-            dcc.Checklist(id="f-estrato", inline=True, options=[1,2,3,4,5,6], value=[1,2,3,4,5,6]),
-            dbc.Label("Age range", className="mt-2"),
-            dcc.RangeSlider(id="f-edad", min=12, max=80, step=1, value=[16,70], allowCross=False),
-            dbc.Checklist(id="f-internet", options=[{"label":"With Internet only","value":"with"}], value=[]),
-        ], className="filters")
-    ], className="sidebar")
+        dbc.Container([
+            dbc.Row([
+                dbc.Col(html.Div("Análisis de la adopción digital en Colombia", className="title"), md=8),
+                dbc.Col(html.Div([
+                    dbc.Button("About & notes", href=dash.get_relative_path('/about'), color="secondary", outline=True)
+                ], className="text-end"), md=4)
+            ], className="g-2"),
+            dbc.Row([
+                dbc.Col(dcc.Dropdown(id="f-depto", placeholder="Departamento", multi=True), md=3),
+                dbc.Col(dcc.Dropdown(id="f-area", placeholder="Área geográfica", multi=True), md=3),
+                dbc.Col(kpi_chip("kpi-cobertura", "Cobertura", "95%"), md=3),
+                dbc.Col(kpi_chip("kpi-adop", "Adopción digital", "45%"), md=3),
+            ], className="g-2 mt-1 filters")
+        ], fluid=True)
+    ], className="header py-2")
 
 
-def _topbar():
-    return html.Div([
-        html.Div("Digital Adoption Panel – CNC", className="h5 m-0"),
-        html.Div([
-            dbc.Button("Export view", id="btn-export", color="primary", outline=True, className="me-2"),
-            dbc.Button("Refresh data", id="btn-refresh", color="secondary", outline=True)
-        ])
-    ], className="topbar")
-
-
-def make_shell(shared_stores):
+def _scroll_body():
+    # Sections stacked vertically to mimic your mockup
     return dbc.Container([
-        dbc.Row([
-            dbc.Col(_sidebar(), width=3),
-            dbc.Col([
-                _topbar(),
-                dash.page_container,
-                shared_stores
-            ], width=9)
-        ], className="g-0")
-    ], fluid=True)
+        # SECTION 1: Clusters densidad + adopción (map + three small charts)
+        section("Clusters a partir de la densidad poblacional y la adopción digital", [
+            dbc.Row([
+                dbc.Col(html.Img(id="img-map", className="map-img"), md=6),
+                dbc.Col(dbc.Card(dbc.CardBody(dcc.Graph(id="fig-prom-pobl"))), md=3),
+                dbc.Col(dbc.Card(dbc.CardBody(dcc.Graph(id="fig-cobertura-cluster"))), md=3),
+            ], className="gy-3"),
+            dbc.Row([
+                dbc.Col(dbc.Card(dbc.CardBody(dcc.Graph(id="fig-adop-por-cluster"))), md=6)
+            ], className="gy-3 mt-1")
+        ]),
+
+        # SECTION 2: Clusters con variables sociodemográficas
+        section("Clusters a partir de las variables sociodemográficas y la adopción digital", [
+            dbc.Row([
+                dbc.Col(dbc.Card(dbc.CardBody(dcc.Graph(id="fig-scatter-clusters"))), md=6),
+                dbc.Col(dbc.Card(dbc.CardBody(dcc.Graph(id="fig-genero"))), md=6),
+            ], className="gy-3"),
+            dbc.Row([
+                dbc.Col(dbc.Card(dbc.CardBody(dcc.Graph(id="fig-estrato-prom"))), md=6),
+                dbc.Col(dbc.Card(dbc.CardBody(dcc.Graph(id="fig-escolaridad-prom"))), md=6),
+            ], className="gy-3")
+        ]),
+
+        # SECTION 3: Patrones de adopción digital (stacked bars)
+        section("Patrones de adopción digital", [
+            dbc.Row([
+                dbc.Col(dbc.Card(dbc.CardBody(dcc.Graph(id="fig-patrones"))), md=12)
+            ])
+        ]),
+
+        # SECTION 4: Top 5 municipios con mayores necesidades
+        section("Top 5 de municipios con mayores necesidades de adopción digital", [
+            dbc.Row([
+                dbc.Col(dbc.Card(dbc.CardBody(dcc.Loading(dcc.Graph(id="tbl-top5")))), md=12)
+            ])
+        ])
+    ], fluid=True, className="main")
+
+
+def make_shell():
+    return html.Div([
+        _header(),
+        _scroll_body(),
+        dcc.Store(id="store-data"),
+        dcc.Store(id="store-filters"),
+        dcc.Store(id="store-metadata"),
+    ])
