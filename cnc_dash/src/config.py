@@ -7,3 +7,7 @@ SHAPES_DIR = Path(__file__).resolve().parents[2] / "Geografia Colombia" / "gadm4
 # Filenames used in your notebook snippet
 DPTO_SHP = SHAPES_DIR / "gadm41_COL_1.shp"
 MPIO_SHP = SHAPES_DIR / "gadm41_COL_2.shp"
+
+DATOS_DIR = Path(__file__).resolve().parents[2] / "Data"
+
+DATA_RES = DATOS_DIR / "Resultados_modelo.csv"

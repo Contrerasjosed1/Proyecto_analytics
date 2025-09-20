@@ -6,7 +6,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from .sample_data import make_fake_data
+from .sample_data import make_fake_data, leer_base_datos
 from src.config import DPTO_SHP, MPIO_SHP
 
 
@@ -15,24 +15,27 @@ def build_choropleth_png(df=None) -> str:
     Uses the same logic you shared: join department shapefile with an aggregated metric.
     """
     if df is None:
-        df = make_fake_data(2000)
+        # df = make_fake_data(2000)
+        df = leer_base_datos()
 
     # Normalize department names for join
     tmp = df.copy()
-    tmp["Nombre Departamento_norm"] = (tmp["departamento"].str.upper()
-                                       .str.normalize("NFKD").str.encode("ascii","ignore").str.decode("utf-8"))
+    tmp["Nombre Departamento_norm"] = (tmp["Nombre Departamento"].str.upper().str.normalize("NFKD")
+                                       .str.encode("ascii","ignore").str.decode("utf-8"))
 
     gdf_dpto = gpd.read_file(DPTO_SHP)
     gdf_dpto["NAME_1_norm"] = (gdf_dpto["NAME_1"].str.upper()
                                  .str.normalize("NFKD").str.encode("ascii","ignore").str.decode("utf-8"))
 
     df_dpto = (tmp.groupby("Nombre Departamento_norm", as_index=False)
-                  .agg(dens_int=("dens_int","mean"), n_mpios=("municipio","nunique")))
+                  .agg(dens_int=("dens_int","mean"), n_mpios=("MUNICIPIO_NOMBRE","nunique")))
 
     gdf_join = gdf_dpto.merge(df_dpto, left_on="NAME_1_norm", right_on="Nombre Departamento_norm", how="left")
 
+    
     # --- Plot with hatch background + choropleth
-    fig, ax = plt.subplots(figsize=(8, 8), dpi=150)
+    fig, ax = plt.subplots(figsize=(8, 11), dpi=150)
+
     gdf_dpto.boundary.plot(ax=ax, edgecolor="grey", linewidth=0.7)
     gdf_join.plot(
         ax=ax,

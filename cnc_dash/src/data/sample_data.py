@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from src.config import DATA_RES
 
 DEPTOS = [
     "Amazonas","Antioquia","Arauca","Atlántico","Bogotá","Bolívar","Boyacá",
@@ -15,7 +16,7 @@ def make_fake_data(n: int = 2000, seed: int = 7) -> pd.DataFrame:
     rng = np.random.default_rng(seed)
     df = pd.DataFrame({
         "year": rng.choice([2018, 2023], size=n, p=[0.45, 0.55]),
-        "departamento": rng.choice(DEPTOS, size=n),
+        "Nombre Departamento": rng.choice(DEPTOS, size=n),
         "municipio": rng.choice(MUNICIPIOS, size=n),
         "estrato": rng.choice([1,2,3,4,5,6], size=n, p=[.22,.24,.22,.16,.1,.06]),
         "edad": rng.integers(12, 80, size=n),
@@ -30,4 +31,8 @@ def make_fake_data(n: int = 2000, seed: int = 7) -> pd.DataFrame:
     noise = rng.normal(0, 0.05, size=n)
     df["idx_adopcion"] = np.clip(base + noise, 0, 1)
     df["cluster"] = pd.cut(df["idx_adopcion"], bins=[-0.01, 0.33, 0.66, 1.0], labels=["Cluster 1","Cluster 2","Cluster 3"])
+    return df
+
+def leer_base_datos (df=None) -> pd.DataFrame:
+    df=pd.read_csv(DATA_RES)
     return df

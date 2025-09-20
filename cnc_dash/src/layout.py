@@ -15,8 +15,8 @@ def _header():
                 ], className="text-end"), md=4)
             ], className="g-2"),
             dbc.Row([
-                dbc.Col(dcc.Dropdown(id="f-depto", placeholder="Departamento", multi=True), md=3),
-                dbc.Col(dcc.Dropdown(id="f-area", placeholder="Área geográfica", multi=True), md=3),
+                dbc.Col(dcc.Dropdown(id="f-region", placeholder="Departamento", multi=False), md=3),
+                dbc.Col(dcc.Dropdown(id="f-area", placeholder="Total", multi=True), md=3),
                 dbc.Col(kpi_chip("kpi-cobertura", "Cobertura", "95%"), md=3),
                 dbc.Col(kpi_chip("kpi-adop", "Adopción digital", "45%"), md=3),
             ], className="g-2 mt-1 filters")
@@ -28,6 +28,7 @@ def make_shell():
         _header(),
         dash.page_container,          # ← aquí se montan / (home.py) y /about
         dcc.Store(id="store-data"),
+        dcc.Store(id="store-data-filtrada"),
         dcc.Store(id="store-filters"),
         dcc.Store(id="store-metadata"),
     ])
