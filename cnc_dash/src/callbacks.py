@@ -67,10 +67,10 @@ def _filtrar_por_depto(region_sel, area_sel, data):
     return df_filtrado.to_dict("records")
 
 # ---------------------- Map image ----------------------
-@callback(Output("img-map", "src"), Input("store-data-filtrada", "data"))
-def _update_map(data):
+@callback(Output("img-map", "src"), Input("store-data-filtrada", "data"), Input("f-region", "value"))
+def _update_map(data, region_sel):
     df = pd.DataFrame(data)
-    return build_choropleth_png(df)
+    return build_choropleth_png(df, region_sel)
 
 
 # ---------------------- Section 1 charts ---------------
@@ -78,15 +78,15 @@ def _update_map(data):
     Output("fig-prom-pobl", "figure"),
     Output("fig-cobertura-cluster", "figure"),
     Output("fig-adop-por-cluster", "figure"),
-    Input("store-data", "data"))
+    Input("store-data-filtrada", "data"))
 
 def _section1(data):
     df = pd.DataFrame(data)
     g = df.groupby("Nombre Departamento").agg(pobl=("POBLACIÓN_ICFES","mean"), cobertura=("HOGARES_INTERNET","mean"), adop=("dens_int","mean")).reset_index()
+    g["adop"] = (1-g["adop"])*100
     f1 = px.bar(g, x="Nombre Departamento", y="pobl", title="Promedio de población por Departamento")
     f2 = px.bar(g, x="Nombre Departamento", y="cobertura", title="Tasa de cobertura por Departamento")
-    f2.update_yaxes(tickformat=",.0%")
-    f3 = px.line(g, x="Nombre Departamento", y="adop", markers=True, title="Tasa de adopción digital por cluster")
+    f3 = px.bar(g, x="Nombre Departamento", y="adop", title="Tasa de adopción digital por cluster")
     return f1, f2, f3
 
 
@@ -96,7 +96,7 @@ def _section1(data):
     Output("fig-genero", "figure"),
     Output("fig-estrato-prom", "figure"),
     Output("fig-escolaridad-prom", "figure"),
-    Input("store-data", "data"))
+    Input("store-data-filtrada", "data"))
 
 def _section2(data):
     df = pd.DataFrame(data)
@@ -116,7 +116,7 @@ def _section2(data):
 
 
 # ---------------------- Section 3 chart ----------------
-@callback(Output("fig-patrones", "figure"), Input("store-data", "data"))
+@callback(Output("fig-patrones", "figure"), Input("store-data-filtrada", "data"))
 
 def _section3(data):
     df = pd.DataFrame(data)
@@ -160,14 +160,14 @@ def _section3(data):
     return fig
 
 # ---------------------- Section 4 table ----------------
-@callback(Output("tbl-top5", "figure"), Input("store-data", "data"))
+@callback(Output("tbl-top5", "figure"), Input("store-data-filtrada", "data"))
 
 def _section4(data):
     df = pd.DataFrame(data)
     # "Necesidad" como (1 - idx_adopcion)
     need = (df.groupby(["Nombre Departamento","MUNICIPIO_NOMBRE"], as_index=False)
             .agg(cobertura=("HOGARES_INTERNET","mean"), adop=("dens_int","mean"), estrato=("ESTRATO","mean")))
-    need["score"] = 1 - need["adop"]
+    need["score"] = need["adop"]
     top5 = need.sort_values("score", ascending=False).head(5)
 
     # Render as table-like figure for quick drop-in (consistent with plot outputs)
@@ -176,7 +176,7 @@ def _section4(data):
         top5["MUNICIPIO_NOMBRE"],
         (top5["cobertura"]*100).round(0).astype(int).astype(str) ,
         top5["Nombre Departamento"],
-        (top5["adop"]*100).round(0).astype(int).astype(str) + '%',
+        ((1-top5["adop"])*100).round(0).astype(int).astype(str) + '%',
         top5["estrato"].round(1)
     ], align='left')
     fig = go.Figure(data=[go.Table(header=header, cells=cells)])

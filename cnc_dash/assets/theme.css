@@ -38,3 +38,9 @@ body{ margin:0; padding:0; background: radial-gradient(1200px 600px at 20% -10%,
 
 /* Map image */
 .map-img{ width:100%; height:auto; border-radius: 12px; border:1px solid var(--line); }
+
+/* Área clara completa para About */
+.about-light .card, .about-light .dbc-card { background:#fff !important; border:1px solid #dee2e6 !important; }
+.about-light .card .card-body { background:#fff !important; color:#212529 !important; }
+.about-light h1, .about-light h2, .about-light h3, .about-light h4, .about-light h5, .about-light h6,
+.about-light p, .about-light li, .about-light a, .about-light .text-muted { color:#212529 !important; }
