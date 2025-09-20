@@ -66,6 +66,28 @@ def _filtrar_por_depto(region_sel, area_sel, data):
             df_filtrado = df[df[llave] == area_sel]
     return df_filtrado.to_dict("records")
 
+@callback(
+    Output("kpi-cobertura", "children"),
+    Input("store-data-filtrada", "data")
+)
+def _update_kpi_cobertura(data):
+    df = pd.DataFrame(data)
+    if df.empty:
+        return "0%"
+    cobertura = df["HOGARES_INTERNET"].mean()
+    return f"{cobertura:.0f} Hogares"
+
+
+@callback(
+    Output("kpi-adop", "children"),
+    Input("store-data-filtrada", "data")
+)
+def _update_kpi_adopcion(data):
+    df = pd.DataFrame(data)
+    if df.empty:
+        return "0%"
+    adop = 1 - df["dens_int"].mean()
+    return f"{adop:.1%}"
 # ---------------------- Map image ----------------------
 @callback(Output("img-map", "src"), Input("store-data-filtrada", "data"), Input("f-region", "value"))
 def _update_map(data, region_sel):

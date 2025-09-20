@@ -44,3 +44,38 @@ body{ margin:0; padding:0; background: radial-gradient(1200px 600px at 20% -10%,
 .about-light .card .card-body { background:#fff !important; color:#212529 !important; }
 .about-light h1, .about-light h2, .about-light h3, .about-light h4, .about-light h5, .about-light h6,
 .about-light p, .about-light li, .about-light a, .about-light .text-muted { color:#212529 !important; }
+
+/* Poner en negrita los textos de los Dropdowns */
+.Select-placeholder, 
+.Select-value-label {
+  font-weight: 600 !important;   /* negrita */
+  color: #000000 !important;     /* opcional: texto oscuro */
+}
+
+/* Fondo y texto del menú desplegable del Dropdown */
+.Select-menu-outer {
+  background-color: #1e1e2f !important;   /* fondo oscuro */
+  border: 1px solid #444 !important;
+  color: #ffffff !important;              /* texto claro */
+  z-index: 9999 !important;               /* asegura que se vea encima */
+}
+
+/* Cada opción del Dropdown */
+.Select-option {
+  background-color: #1e1e2f !important;   /* mismo fondo oscuro */
+  color: #ffffff !important;
+  font-weight: 500;                       /* seminegrita */
+  padding: 6px 12px;
+}
+
+/* Hover sobre opción */
+.Select-option.is-focused {
+  background-color: #2a2a40 !important;   /* un poco más claro */
+  color: #ffffff !important;
+}
+
+/* Opción seleccionada */
+.Select-option.is-selected {
+  background-color: #3a3a60 !important;
+  font-weight: 600;
+}
