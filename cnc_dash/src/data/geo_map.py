@@ -38,7 +38,7 @@ def build_choropleth_png(df=None, tipo=None) -> str:
             cmap="OrRd",            # paleta de colores (puedes cambiar a 'viridis', 'Blues', etc.)
             edgecolor="black",
             legend=True,            # para que salga la barra de colores
-            legend_kwds={"label": "Densidad (dens_int)", "orientation": "vertical"}
+            legend_kwds={"label": "Brecha digital", "orientation": "vertical"}
         )
     else:
         tmp["Nombre Departamento_norm"] = (tmp["Nombre Departamento"].str.upper().str.normalize("NFKD")
@@ -59,7 +59,7 @@ def build_choropleth_png(df=None, tipo=None) -> str:
             edgecolor="black",
             linewidth=0.4,
             legend=True,
-            legend_kwds={"label": "Densidad (dens_int)", "orientation": "vertical"},
+            legend_kwds={"label": "Brecha digital", "orientation": "vertical"},
             missing_kwds={"color":"white","edgecolor":"grey","hatch":"...","label":"Sin dato"}
         )
     ax.set_axis_off()
