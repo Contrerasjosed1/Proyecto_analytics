@@ -122,6 +122,7 @@ def _section1(data):
 
 def _section2(data):
     df = pd.DataFrame(data)
+    df["GENERO"] = df["GENERO"].replace({1:"Hombre", 2:"Mujer"})
     f_sc = px.scatter(df.sample(min(600, len(df))), x="EDAD", y="dens_int", color="cluster", opacity=.8,
                       title="Distribución de clusters", labels={"EDAD":"Edad","dens_int":"Índice"})
 
